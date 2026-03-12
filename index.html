@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <title>Ordem de Serviço - inPrint</title>
     <style>
-        /* Estilos baseados no Orçamento.txt e imagens OSL [2-4] */
+        /* Estilos baseados no Orçamento e Imagens OSL */
         @page { size: A4; margin: 0; }
         body { font-family: Arial, sans-serif; background-color: #f0f0f0; margin: 0; padding: 10mm; color: #000; }
         .document-container { width: 200mm; height: 282mm; background: white; margin: 0 auto; padding: 8mm 12mm; border: 2px solid #000; box-sizing: border-box; display: flex; flex-direction: column; position: relative; }
@@ -20,11 +20,10 @@
         .status-ok { background: #d4edda; color: #155724; }
         .status-err { background: #f8d7da; color: #721c24; }
         .status-grid { margin-top: 15px; display: grid; grid-template-columns: 1fr 1fr; gap: 5px; font-size: 10px; }
-        .status-item { display: flex; align-items: center; border-bottom: 1px solid #ccc; }
+        .status-item { display: flex; align-items: center; border-bottom: 1px solid #ccc; padding: 2px 0; }
         .status-label { font-weight: bold; min-width: 95px; }
-        .status-content { flex-grow: 1; min-height: 1.2em; }
         [contenteditable="true"]:focus { background-color: #ffffca !important; }
-        @media print { .no-print, #conn-status { display: none; } body { padding: 0; } .document-container { border: 1px solid #000; margin: 0; } }
+        @media print { .no-print, #conn-status { display: none; } body { padding: 0; } .document-container { border: 1px solid #000; margin: 0; shadow: none; } }
     </style>
 </head>
 <body>
@@ -66,7 +65,7 @@
         </div>
 
         <div style="flex: 2;">
-            <div id="conn-status">⏳ Conectando...</div>
+            <div id="conn-status">⏳ Sincronizando peças...</div>
             <table>
                 <thead>
                     <tr><th colspan="2">Peças Necessárias</th></tr>
@@ -91,28 +90,28 @@
     </div>
 
     <div class="status-grid">
-        <div class="status-item"><span class="status-label">Diagnosticada:</span><div class="status-content" contenteditable="true">/ /</div> por: <div class="status-content" contenteditable="true"></div></div>
-        <div class="status-item"><span class="status-label">Orçamento em:</span><div class="status-content" contenteditable="true">/ /</div> Valor R$: <div class="status-content" contenteditable="true"></div></div>
-        <div class="status-item"><span class="status-label">Aprovação:</span><div class="status-content" contenteditable="true">/ /</div> [ ] Aprovada [ ] Reprovada</div>
+        <div class="status-item"><span class="status-label">Diagnosticada:</span><div contenteditable="true">/ /</div>&nbsp;por:&nbsp;<div contenteditable="true" style="flex-grow:1"></div></div>
+        <div class="status-item"><span class="status-label">Valor R$:</span><div contenteditable="true" style="flex-grow:1"></div></div>
+        <div class="status-item"><span class="status-label">Aprovação:</span><div contenteditable="true">/ /</div>&nbsp;[ ] Aprovada&nbsp;[ ] Reprovada</div>
     </div>
 
     <div style="font-size: 9px; margin-top: auto; border-top: 1px solid #000; padding-top: 10px;">
-        - A instalação de software(s) será realizada desde que fornecido pelo cliente [5, 6].
+        - A instalação de software(s) (de qualquer natureza) será realizada desde que o(s) software(s) seja(m) fornecido(s) pelo cliente [1].
     </div>
 </div>
 
 <script>
-    // Link Raw Direto (Evita redirecionamentos problemáticos)
-    const CSV_URL = 'https://raw.githubusercontent.com/thiagolf-pro/os-inprint/main/PARTNUMBER.csv';
+    // USANDO CAMINHO RELATIVO: Funciona perfeitamente no GitHub Pages
+    const CSV_URL = 'PARTNUMBER.csv'; 
 
     async function loadParts() {
         const statusEl = document.getElementById('conn-status');
         try {
             const response = await fetch(CSV_URL);
-            if (!response.ok) throw new Error("Erro " + response.status);
+            if (!response.ok) throw new Error("Status: " + response.status);
             const data = await response.text();
             
-            // Processa colunas do seu CSV [1]: MODEL, ITEM, PARTNUMBER
+            // Lendo as colunas conforme seu CSV: MODEL, ITEM, PARTNUMBER [2]
             const rows = data.split(/\r?\n/).filter(line => line.trim() !== "").slice(1);
             const list = document.getElementById('pecas-list');
             list.innerHTML = ""; 
@@ -120,17 +119,20 @@
             rows.forEach(row => {
                 const cols = row.split(',');
                 if (cols.length >= 3) {
+                    const model = cols.trim();
+                    const item = cols[3].trim();
+                    const pn = cols[4].trim();
                     const option = document.createElement('option');
-                    // Exibe: ITEM - MODELO (PN: PARTNUMBER) [1]
-                    option.value = `${cols[2].trim()} - ${cols.trim()} (PN: ${cols[7].trim()})`;
+                    // Exemplo: ROLO FUSOR - M4070 (PN: JC6602846A) [2]
+                    option.value = `${item} - ${model} (PN: ${pn})`;
                     list.appendChild(option);
                 }
             });
             statusEl.className = 'status-ok';
-            statusEl.innerText = `✅ GitHub Conectado: ${rows.length} peças.`;
+            statusEl.innerText = `✅ Banco de Peças Conectado (${rows.length} itens)`;
         } catch (e) {
             statusEl.className = 'status-err';
-            statusEl.innerText = "❌ Falha na conexão: " + e.message;
+            statusEl.innerText = "❌ ERRO DE CONEXÃO: Acesse pelo link do GitHub Pages.";
             console.error("Erro detalhado:", e);
         }
     }
