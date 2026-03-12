@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <title>Ordem de Serviço - inPrint</title>
     <style>
-        /* Estilos baseados no Orçamento e Imagens OSL */
+        /* Baseado no layout de ORÇAMENTO.txt e imagens OSL */
         @page { size: A4; margin: 0; }
         body { font-family: Arial, sans-serif; background-color: #f0f0f0; margin: 0; padding: 10mm; color: #000; }
         .document-container { width: 200mm; height: 282mm; background: white; margin: 0 auto; padding: 8mm 12mm; border: 2px solid #000; box-sizing: border-box; display: flex; flex-direction: column; position: relative; }
@@ -23,13 +23,13 @@
         .status-item { display: flex; align-items: center; border-bottom: 1px solid #ccc; padding: 2px 0; }
         .status-label { font-weight: bold; min-width: 95px; }
         [contenteditable="true"]:focus { background-color: #ffffca !important; }
-        @media print { .no-print, #conn-status { display: none; } body { padding: 0; } .document-container { border: 1px solid #000; margin: 0; shadow: none; } }
+        @media print { .no-print, #conn-status { display: none; } body { padding: 0; } .document-container { border: 1px solid #000; margin: 0; } }
     </style>
 </head>
 <body>
 
 <div class="no-print" style="text-align: center; margin-bottom: 10px;">
-    <button style="padding: 10px 20px; background: #28a745; color: white; border: none; cursor: pointer; font-weight: bold;" onclick="window.print()">IMPRIMIR O.S.</button>
+    <button style="padding: 10px 20px; background: #28a745; color: white; border: none; cursor: pointer; font-weight: bold;" onclick="window.print()">GERAR PDF / IMPRIMIR</button>
 </div>
 
 <div class="document-container" oninput="forceUppercase(event)">
@@ -96,12 +96,11 @@
     </div>
 
     <div style="font-size: 9px; margin-top: auto; border-top: 1px solid #000; padding-top: 10px;">
-        - A instalação de software(s) (de qualquer natureza) será realizada desde que o(s) software(s) seja(m) fornecido(s) pelo cliente [1].
+        - A instalação de software(s) (de qualquer natureza) será realizada desde que o(s) software(s) seja(m) fornecido(s) pelo cliente [2, 3].
     </div>
 </div>
 
 <script>
-    // USANDO CAMINHO RELATIVO: Funciona perfeitamente no GitHub Pages
     const CSV_URL = 'PARTNUMBER.csv'; 
 
     async function loadParts() {
@@ -111,7 +110,7 @@
             if (!response.ok) throw new Error("Status: " + response.status);
             const data = await response.text();
             
-            // Lendo as colunas conforme seu CSV: MODEL, ITEM, PARTNUMBER [2]
+            // Pega as linhas e ignora o cabeçalho (MODEL, ITEM, PARTNUMBER) [1]
             const rows = data.split(/\r?\n/).filter(line => line.trim() !== "").slice(1);
             const list = document.getElementById('pecas-list');
             list.innerHTML = ""; 
@@ -119,11 +118,13 @@
             rows.forEach(row => {
                 const cols = row.split(',');
                 if (cols.length >= 3) {
+                    // CORREÇÃO: Pegando o índice correto e aplicando trim em cada string
                     const model = cols.trim();
-                    const item = cols[3].trim();
-                    const pn = cols[4].trim();
+                    const item = cols[4].trim();
+                    const pn = cols[5].trim();
+                    
                     const option = document.createElement('option');
-                    // Exemplo: ROLO FUSOR - M4070 (PN: JC6602846A) [2]
+                    // Exibe no formato: ITEM - MODELO (PN: PARTNUMBER)
                     option.value = `${item} - ${model} (PN: ${pn})`;
                     list.appendChild(option);
                 }
@@ -132,8 +133,7 @@
             statusEl.innerText = `✅ Banco de Peças Conectado (${rows.length} itens)`;
         } catch (e) {
             statusEl.className = 'status-err';
-            statusEl.innerText = "❌ ERRO DE CONEXÃO: Acesse pelo link do GitHub Pages.";
-            console.error("Erro detalhado:", e);
+            statusEl.innerText = "❌ Falha na conexão: " + e.message;
         }
     }
 
@@ -155,7 +155,7 @@
 
     function forceUppercase(e) {
         if (e.target.hasAttribute('contenteditable') || e.target.tagName === 'INPUT') {
-            e.target.style.textTransform = "uppercase";
+            e.target.style.textTransform = "uppercase"; [6]
         }
     }
 </script>
