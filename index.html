@@ -4,66 +4,36 @@
     <meta charset="UTF-8">
     <title>Ordem de Serviço - inPrint</title>
     <style>
-        /* Baseado no layout de ORÇAMENTO.txt e imagens OSL */
+        /* Estilos baseados no Orçamento.txt e imagens OSL [2-4] */
         @page { size: A4; margin: 0; }
         body { font-family: Arial, sans-serif; background-color: #f0f0f0; margin: 0; padding: 10mm; color: #000; }
-        
-        #formatting-toolbar {
-            position: absolute; display: none; background: #222; color: #fff;
-            padding: 5px; border-radius: 4px; z-index: 1000; box-shadow: 0 2px 8px rgba(0,0,0,0.5);
-        }
-        #formatting-toolbar button { background: none; border: none; color: white; padding: 5px 8px; cursor: pointer; font-weight: bold; }
-
-        .document-container {
-            width: 200mm; height: 282mm; background: white; margin: 0 auto;
-            padding: 8mm 12mm; border: 2px solid #000; box-sizing: border-box;
-            position: relative; display: flex; flex-direction: column;
-        }
-
-        /* Cabeçalho inPrint conforme OSL_24.290.JPG */
+        .document-container { width: 200mm; height: 282mm; background: white; margin: 0 auto; padding: 8mm 12mm; border: 2px solid #000; box-sizing: border-box; display: flex; flex-direction: column; position: relative; }
         .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #000; padding-bottom: 5px; }
         .logo-side img { width: 140px; }
         .os-number { font-size: 32px; font-weight: bold; flex-grow: 1; text-align: center; }
-        
         .tables-container { display: flex; gap: 10px; margin-top: 10px; }
         table { width: 100%; border-collapse: collapse; font-size: 11px; }
         th { border: 1px solid #000; background: #eee; padding: 4px; text-transform: uppercase; }
         td { border: 1px solid #000; padding: 3px; position: relative; }
-
         .part-input { width: 100%; border: none; outline: none; text-transform: uppercase; background: transparent; font-family: inherit; font-size: inherit; }
-
         #conn-status { font-size: 10px; font-weight: bold; text-align: center; width: 100%; margin-bottom: 5px; border-radius: 3px; }
         .status-ok { background: #d4edda; color: #155724; }
         .status-err { background: #f8d7da; color: #721c24; }
-
-        /* Grid de Status conforme fontes OSL */
         .status-grid { margin-top: 15px; display: grid; grid-template-columns: 1fr 1fr; gap: 5px; font-size: 10px; }
         .status-item { display: flex; align-items: center; border-bottom: 1px solid #ccc; }
         .status-label { font-weight: bold; min-width: 95px; }
         .status-content { flex-grow: 1; min-height: 1.2em; }
-
         [contenteditable="true"]:focus { background-color: #ffffca !important; }
-
-        @media print {
-            .no-print, #formatting-toolbar, #conn-status { display: none; }
-            body { padding: 0; background: none; }
-            .document-container { border: 1px solid #000; margin: 0; }
-        }
+        @media print { .no-print, #conn-status { display: none; } body { padding: 0; } .document-container { border: 1px solid #000; margin: 0; } }
     </style>
 </head>
 <body>
 
-<div id="formatting-toolbar">
-    <button onclick="document.execCommand('bold')">B</button>
-    <button onclick="document.execCommand('italic')">I</button>
-</div>
-
 <div class="no-print" style="text-align: center; margin-bottom: 10px;">
-    <button style="padding: 10px 20px; background: #28a745; color: white; border: none; cursor: pointer; font-weight: bold;" onclick="window.print()">GERAR PDF / IMPRIMIR</button>
+    <button style="padding: 10px 20px; background: #28a745; color: white; border: none; cursor: pointer; font-weight: bold;" onclick="window.print()">IMPRIMIR O.S.</button>
 </div>
 
 <div class="document-container" oninput="forceUppercase(event)">
-    <!-- Cabeçalho -->
     <div class="header">
         <div class="logo-side"><img src="https://inprint.com.br/formularios/imagens/logo.png" alt="inPrint"></div>
         <div class="os-number" contenteditable="true" data-placeholder="00.000"></div>
@@ -72,7 +42,6 @@
         </div>
     </div>
 
-    <!-- Informações Iniciais -->
     <div style="margin-top: 10px; text-transform: uppercase; font-size: 13px;">
         <div style="display: flex; justify-content: space-between; font-weight: bold; border-bottom: 1px solid #000; padding-bottom: 5px;">
             <div contenteditable="true" data-placeholder="CLIENTE / CONTRATO"></div>
@@ -82,9 +51,7 @@
         <div contenteditable="true" style="margin-top: 10px; font-weight: bold;" data-placeholder="PROBLEMA RELATADO"></div>
     </div>
 
-    <!-- Tabelas de Preenchimento -->
     <div class="tables-container">
-        <!-- Serviços (Manual) -->
         <div style="flex: 3;">
             <table>
                 <thead>
@@ -98,9 +65,8 @@
             <button class="no-print" style="margin-top:5px;" onclick="addRow('servicos-body')">+ Serviço</button>
         </div>
 
-        <!-- Peças (Automático do GitHub) -->
         <div style="flex: 2;">
-            <div id="conn-status">⏳ Sincronizando peças...</div>
+            <div id="conn-status">⏳ Conectando...</div>
             <table>
                 <thead>
                     <tr><th colspan="2">Peças Necessárias</th></tr>
@@ -119,39 +85,34 @@
 
     <datalist id="pecas-list"></datalist>
 
-    <!-- Diagnóstico e Conclusão -->
     <div style="margin-top: 15px; font-size: 12px;">
         <strong>Diagnóstico:</strong> <div contenteditable="true" style="border-bottom: 1px solid #000; min-height: 2.5em;"></div>
         <strong>Conclusão:</strong> <div contenteditable="true" style="border-bottom: 1px solid #000; min-height: 2.5em;"></div>
     </div>
 
-    <!-- Status Finais conforme Imagens OSL -->
     <div class="status-grid">
-        <div class="status-item"><span class="status-label">Diagnosticada em:</span><div class="status-content" contenteditable="true">/ /</div> por: <div class="status-content" contenteditable="true"></div></div>
+        <div class="status-item"><span class="status-label">Diagnosticada:</span><div class="status-content" contenteditable="true">/ /</div> por: <div class="status-content" contenteditable="true"></div></div>
         <div class="status-item"><span class="status-label">Orçamento em:</span><div class="status-content" contenteditable="true">/ /</div> Valor R$: <div class="status-content" contenteditable="true"></div></div>
-        <div class="status-item"><span class="status-label">Aprovação em:</span><div class="status-content" contenteditable="true">/ /</div> [ ] Aprovada [ ] Reprovada</div>
-        <div class="status-item"><span class="status-label">Concluída em:</span><div class="status-content" contenteditable="true">/ /</div> por: <div class="status-content" contenteditable="true"></div></div>
-        <div class="status-item"><span class="status-label">Entregue em:</span><div class="status-content" contenteditable="true">/ /</div> por: <div class="status-content" contenteditable="true"></div></div>
+        <div class="status-item"><span class="status-label">Aprovação:</span><div class="status-content" contenteditable="true">/ /</div> [ ] Aprovada [ ] Reprovada</div>
     </div>
 
-    <!-- Rodapé Legal do Orçamento.txt -->
     <div style="font-size: 9px; margin-top: auto; border-top: 1px solid #000; padding-top: 10px;">
-        - A instalação de software(s) (de qualquer natureza) será realizada desde que fornecido pelo cliente [2].
+        - A instalação de software(s) será realizada desde que fornecido pelo cliente [5, 6].
     </div>
 </div>
 
 <script>
-    // URL Direta (Raw) corrigida para o GitHub Pages
+    // Link Raw Direto (Evita redirecionamentos problemáticos)
     const CSV_URL = 'https://raw.githubusercontent.com/thiagolf-pro/os-inprint/main/PARTNUMBER.csv';
 
     async function loadParts() {
         const statusEl = document.getElementById('conn-status');
         try {
             const response = await fetch(CSV_URL);
-            if (!response.ok) throw new Error();
+            if (!response.ok) throw new Error("Erro " + response.status);
             const data = await response.text();
             
-            // Processa as colunas do seu arquivo: MODEL, ITEM, PARTNUMBER [1]
+            // Processa colunas do seu CSV [1]: MODEL, ITEM, PARTNUMBER
             const rows = data.split(/\r?\n/).filter(line => line.trim() !== "").slice(1);
             const list = document.getElementById('pecas-list');
             list.innerHTML = ""; 
@@ -159,13 +120,9 @@
             rows.forEach(row => {
                 const cols = row.split(',');
                 if (cols.length >= 3) {
-                    const model = cols.trim();
-                    const item = cols[3].trim();
-                    const pn = cols[4].trim();
-                    
                     const option = document.createElement('option');
-                    // Sugestão no formato: ROLO FUSOR - M4070 (PN: JC6602846A)
-                    option.value = `${item} - ${model} (PN: ${pn})`;
+                    // Exibe: ITEM - MODELO (PN: PARTNUMBER) [1]
+                    option.value = `${cols[2].trim()} - ${cols.trim()} (PN: ${cols[7].trim()})`;
                     list.appendChild(option);
                 }
             });
@@ -173,7 +130,8 @@
             statusEl.innerText = `✅ GitHub Conectado: ${rows.length} peças.`;
         } catch (e) {
             statusEl.className = 'status-err';
-            statusEl.innerText = "❌ ERRO: Verifique se o arquivo PARTNUMBER.csv está no GitHub.";
+            statusEl.innerText = "❌ Falha na conexão: " + e.message;
+            console.error("Erro detalhado:", e);
         }
     }
 
@@ -195,7 +153,7 @@
 
     function forceUppercase(e) {
         if (e.target.hasAttribute('contenteditable') || e.target.tagName === 'INPUT') {
-            e.target.style.textTransform = "uppercase"; [5]
+            e.target.style.textTransform = "uppercase";
         }
     }
 </script>
