@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Ordem de Serviço - inPrint</title>
+    <style>
+        /* Baseado no layout de ORÇAMENTO.txt */
+        @page { size: A4; margin: 0; }
+        body { font-family: Arial, sans-serif; background-color: #f0f0f0; margin: 0; padding: 10mm; color: #000; }
+        
+        #formatting-toolbar {
+            position: absolute; display: none; background: #222; color: #fff;
+            padding: 5px; border-radius: 4px; z-index: 1000; box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+        }
+        #formatting-toolbar button { background: none; border: none; color: white; padding: 5px 8px; cursor: pointer; font-weight: bold; }
+
+        .document-container {
+            width: 200mm; height: 282mm; background: white; margin: 0 auto;
+            padding: 8mm 12mm; border: 2px solid #000; box-sizing: border-box;
+            position: relative; display: flex; flex-direction: column;
+        }
+
+        /* Layout conforme imagens OSL */
+        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #000; padding-bottom: 5px; }
+        .logo-side img { width: 140px; }
+        .os-number { font-size: 32px; font-weight: bold; flex-grow: 1; text-align: center; }
+        
+        .tables-container { display: flex; gap: 10px; margin-top: 10px; }
+        table { width: 100%; border-collapse: collapse; font-size: 11px; }
+        th { border: 1px solid #000; background: #eee; padding: 4px; text-transform: uppercase; }
+        td { border: 1px solid #000; padding: 3px; position: relative; }
+
+        .part-input { width: 100%; border: none; outline: none; text-transform: uppercase; background: transparent; font-family: inherit; font-size: inherit; }
+
+        #conn-status { font-size: 10px; font-weight: bold; text-align: center; width: 100%; margin-bottom: 5px; border-radius: 3px; }
+        .status-ok { background: #d4edda; color: #155724; }
+        .status-err { background: #f8d7da; color: #721c24; }
+
+        /* Grid de Status conforme fontes OSL */
+        .status-grid { margin-top: 15px; display: grid; grid-template-columns: 1fr 1fr; gap: 5px; font-size: 10px; }
+        .status-item { display: flex; align-items: center; border-bottom: 1px solid #ccc; }
+        .status-label { font-weight: bold; min-width: 95px; }
+        .status-content { flex-grow: 1; min-height: 1.2em; }
+
+        [contenteditable="true"]:focus { background-color: #ffffca !important; }
+
+        @media print {
+            .no-print, #formatting-toolbar, #conn-status { display: none; }
+            body { padding: 0; background: none; }
+            .document-container { border: 1px solid #000; margin: 0; }
+        }
+    </style>
+</head>
+<body>
+
+<div id="formatting-toolbar">
+    <button onclick="document.execCommand('bold')">B</button>
+    <button onclick="document.execCommand('italic')">I</button>
+</div>
+
+<div class="no-print" style="text-align: center; margin-bottom: 10px;">
+    <button style="padding: 10px 20px; background: #28a745; color: white; border: none; cursor: pointer; font-weight: bold;" onclick="window.print()">IMPRIMIR O.S.</button>
+</div>
+
+<div class="document-container" oninput="forceUppercase(event)">
+    <div class="header">
+        <div class="logo-side"><img src="https://inprint.com.br/formularios/imagens/logo.png" alt="inPrint"></div>
+        <div class="os-number" contenteditable="true" data-placeholder="00.000"></div>
+        <div style="font-size: 11px; text-align: right;">
+            <span id="os-date"></span><br><span id="os-time"></span>
+        </div>
+    </div>
+
+    <div style="margin-top: 10px; text-transform: uppercase; font-size: 13px;">
+        <div style="display: flex; justify-content: space-between; font-weight: bold; border-bottom: 1px solid #000; padding-bottom: 5px;">
+            <div contenteditable="true" data-placeholder="CLIENTE / CONTRATO"></div>
+            <div contenteditable="true" data-placeholder="MODELO"></div>
+        </div>
+        <div contenteditable="true" style="font-size: 11px; margin-top: 5px;" data-placeholder="Nº DE SÉRIE"></div>
+        <div contenteditable="true" style="margin-top: 10px; font-weight: bold;" data-placeholder="PROBLEMA RELATADO"></div>
+    </div>
+
+    <div class="tables-container">
+        <div style="flex: 3;">
+            <table>
+                <thead>
+                    <tr><th colspan="4">Serviços Executados</th></tr>
+                    <tr><th width="20%">Data</th><th>Nome</th><th width="15%">Início</th><th width="15%">Fim</th></tr>
+                </thead>
+                <tbody id="servicos-body">
+                    <tr><td contenteditable="true">/ /</td><td contenteditable="true"></td><td contenteditable="true">:</td><td contenteditable="true">:</td></tr>
+                </tbody>
+            </table>
+            <button class="no-print" style="margin-top:5px;" onclick="addRow('servicos-body')">+ Serviço</button>
+        </div>
+
+        <div style="flex: 2;">
+            <div id="conn-status">⏳ Conectando...</div>
+            <table>
+                <thead>
+                    <tr><th colspan="2">Peças Necessárias</th></tr>
+                    <tr><th>Descrição / PartNumber</th><th width="20%">Qtd</th></tr>
+                </thead>
+                <tbody id="pecas-body">
+                    <tr>
+                        <td><input type="text" list="pecas-list" class="part-input" placeholder="Busque peça..."></td>
+                        <td contenteditable="true" style="text-align: center;">1</td>
+                    </tr>
+                </tbody>
+            </table>
+            <button class="no-print" style="margin-top:5px;" onclick="addRow('pecas-body')">+ Peça</button>
+        </div>
+    </div>
+
+    <datalist id="pecas-list"></datalist>
+
+    <div style="margin-top: 15px; font-size: 12px;">
+        <strong>Diagnóstico:</strong> <div contenteditable="true" style="border-bottom: 1px solid #000; min-height: 2.5em;"></div>
+        <strong>Conclusão:</strong> <div contenteditable="true" style="border-bottom: 1px solid #000; min-height: 2.5em;"></div>
+    </div>
+
+    <div class="status-grid">
+        <div class="status-item"><span class="status-label">Diagnosticada em:</span><div class="status-content" contenteditable="true">/ /</div> por: <div class="status-content" contenteditable="true"></div></div>
+        <div class="status-item"><span class="status-label">Orçamento em:</span><div class="status-content" contenteditable="true">/ /</div> Valor R$: <div class="status-content" contenteditable="true"></div></div>
+        <div class="status-item"><span class="status-label">Aprovação em:</span><div class="status-content" contenteditable="true">/ /</div> [ ] Aprovada [ ] Reprovada</div>
+        <div class="status-item"><span class="status-label">Concluída em:</span><div class="status-content" contenteditable="true">/ /</div> por: <div class="status-content" contenteditable="true"></div></div>
+        <div class="status-item"><span class="status-label">Entregue em:</span><div class="status-content" contenteditable="true">/ /</div> por: <div class="status-content" contenteditable="true"></div></div>
+    </div>
+
+    <div style="font-size: 9px; margin-top: auto; border-top: 1px solid #000; padding-top: 10px;">
+        - A instalação de software(s) (de qualquer natureza) será realizada desde que fornecido pelo cliente [3].
+    </div>
+</div>
+
+<script>
+    // Link Raw do GitHub baseado na sua URL de download
+    const CSV_URL = 'https://raw.githubusercontent.com/thiagolf-pro/os-inprint/main/PARTNUMBER.csv';
+
+    async function loadParts() {
+        const statusEl = document.getElementById('conn-status');
+        try {
+            const response = await fetch(CSV_URL);
+            if (!response.ok) throw new Error();
+            const data = await response.text();
+            // Processa colunas do seu CSV: MODEL, ITEM, PARTNUMBER [2]
+            const rows = data.split(/\r?\n/).filter(line => line.trim() !== "").slice(1);
+            const list = document.getElementById('pecas-list');
+            list.innerHTML = ""; 
+
+            rows.forEach(row => {
+                const cols = row.split(',');
+                if (cols.length >= 3) {
+                    const option = document.createElement('option');
+                    // Exibe: ITEM - MODELO (PN: PARTNUMBER) para facilitar busca
+                    option.value = `${cols[4].trim()} - ${cols.trim()} (PN: ${cols[5].trim()})`;
+                    list.appendChild(option);
+                }
+            });
+            statusEl.className = 'status-ok';
+            statusEl.innerText = `✅ GitHub Conectado: ${rows.length} peças.`;
+        } catch (e) {
+            statusEl.className = 'status-err';
+            statusEl.innerText = "❌ ERRO: Acesse via GitHub Pages (HTTPS) para habilitar a busca.";
+        }
+    }
+
+    window.onload = () => {
+        document.getElementById('os-date').innerText = new Date().toLocaleDateString('pt-BR');
+        document.getElementById('os-time').innerText = new Date().toLocaleTimeString('pt-BR');
+        loadParts();
+    };
+
+    function addRow(bodyId) {
+        const body = document.getElementById(bodyId);
+        const row = body.insertRow();
+        if(bodyId === 'pecas-body') {
+            row.innerHTML = `<td><input type="text" list="pecas-list" class="part-input"></td><td contenteditable="true" style="text-align: center;">1</td>`;
+        } else {
+            row.innerHTML = `<td contenteditable="true">/ /</td><td contenteditable="true"></td><td contenteditable="true">:</td><td contenteditable="true">:</td>`;
+        }
+    }
+
+    function forceUppercase(e) {
+        if (e.target.hasAttribute('contenteditable') || e.target.tagName === 'INPUT') {
+            e.target.style.textTransform = "uppercase";
+        }
+    }
+</script>
+</body>
+</html>
