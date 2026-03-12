@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <title>Ordem de Serviço - inPrint</title>
     <style>
-        /* Baseado no layout de ORÇAMENTO.txt */
+        /* Baseado no layout de ORÇAMENTO.txt e imagens OSL */
         @page { size: A4; margin: 0; }
         body { font-family: Arial, sans-serif; background-color: #f0f0f0; margin: 0; padding: 10mm; color: #000; }
         
@@ -20,7 +20,7 @@
             position: relative; display: flex; flex-direction: column;
         }
 
-        /* Layout conforme imagens OSL */
+        /* Cabeçalho inPrint conforme OSL_24.290.JPG */
         .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #000; padding-bottom: 5px; }
         .logo-side img { width: 140px; }
         .os-number { font-size: 32px; font-weight: bold; flex-grow: 1; text-align: center; }
@@ -59,10 +59,11 @@
 </div>
 
 <div class="no-print" style="text-align: center; margin-bottom: 10px;">
-    <button style="padding: 10px 20px; background: #28a745; color: white; border: none; cursor: pointer; font-weight: bold;" onclick="window.print()">IMPRIMIR O.S.</button>
+    <button style="padding: 10px 20px; background: #28a745; color: white; border: none; cursor: pointer; font-weight: bold;" onclick="window.print()">GERAR PDF / IMPRIMIR</button>
 </div>
 
 <div class="document-container" oninput="forceUppercase(event)">
+    <!-- Cabeçalho -->
     <div class="header">
         <div class="logo-side"><img src="https://inprint.com.br/formularios/imagens/logo.png" alt="inPrint"></div>
         <div class="os-number" contenteditable="true" data-placeholder="00.000"></div>
@@ -71,6 +72,7 @@
         </div>
     </div>
 
+    <!-- Informações Iniciais -->
     <div style="margin-top: 10px; text-transform: uppercase; font-size: 13px;">
         <div style="display: flex; justify-content: space-between; font-weight: bold; border-bottom: 1px solid #000; padding-bottom: 5px;">
             <div contenteditable="true" data-placeholder="CLIENTE / CONTRATO"></div>
@@ -80,7 +82,9 @@
         <div contenteditable="true" style="margin-top: 10px; font-weight: bold;" data-placeholder="PROBLEMA RELATADO"></div>
     </div>
 
+    <!-- Tabelas de Preenchimento -->
     <div class="tables-container">
+        <!-- Serviços (Manual) -->
         <div style="flex: 3;">
             <table>
                 <thead>
@@ -94,8 +98,9 @@
             <button class="no-print" style="margin-top:5px;" onclick="addRow('servicos-body')">+ Serviço</button>
         </div>
 
+        <!-- Peças (Automático do GitHub) -->
         <div style="flex: 2;">
-            <div id="conn-status">⏳ Conectando...</div>
+            <div id="conn-status">⏳ Sincronizando peças...</div>
             <table>
                 <thead>
                     <tr><th colspan="2">Peças Necessárias</th></tr>
@@ -114,11 +119,13 @@
 
     <datalist id="pecas-list"></datalist>
 
+    <!-- Diagnóstico e Conclusão -->
     <div style="margin-top: 15px; font-size: 12px;">
         <strong>Diagnóstico:</strong> <div contenteditable="true" style="border-bottom: 1px solid #000; min-height: 2.5em;"></div>
         <strong>Conclusão:</strong> <div contenteditable="true" style="border-bottom: 1px solid #000; min-height: 2.5em;"></div>
     </div>
 
+    <!-- Status Finais conforme Imagens OSL -->
     <div class="status-grid">
         <div class="status-item"><span class="status-label">Diagnosticada em:</span><div class="status-content" contenteditable="true">/ /</div> por: <div class="status-content" contenteditable="true"></div></div>
         <div class="status-item"><span class="status-label">Orçamento em:</span><div class="status-content" contenteditable="true">/ /</div> Valor R$: <div class="status-content" contenteditable="true"></div></div>
@@ -127,13 +134,14 @@
         <div class="status-item"><span class="status-label">Entregue em:</span><div class="status-content" contenteditable="true">/ /</div> por: <div class="status-content" contenteditable="true"></div></div>
     </div>
 
+    <!-- Rodapé Legal do Orçamento.txt -->
     <div style="font-size: 9px; margin-top: auto; border-top: 1px solid #000; padding-top: 10px;">
-        - A instalação de software(s) (de qualquer natureza) será realizada desde que fornecido pelo cliente [3].
+        - A instalação de software(s) (de qualquer natureza) será realizada desde que fornecido pelo cliente [2].
     </div>
 </div>
 
 <script>
-    // Link Raw do GitHub baseado na sua URL de download
+    // URL Direta (Raw) corrigida para o GitHub Pages
     const CSV_URL = 'https://raw.githubusercontent.com/thiagolf-pro/os-inprint/main/PARTNUMBER.csv';
 
     async function loadParts() {
@@ -142,7 +150,8 @@
             const response = await fetch(CSV_URL);
             if (!response.ok) throw new Error();
             const data = await response.text();
-            // Processa colunas do seu CSV: MODEL, ITEM, PARTNUMBER [2]
+            
+            // Processa as colunas do seu arquivo: MODEL, ITEM, PARTNUMBER [1]
             const rows = data.split(/\r?\n/).filter(line => line.trim() !== "").slice(1);
             const list = document.getElementById('pecas-list');
             list.innerHTML = ""; 
@@ -150,9 +159,13 @@
             rows.forEach(row => {
                 const cols = row.split(',');
                 if (cols.length >= 3) {
+                    const model = cols.trim();
+                    const item = cols[3].trim();
+                    const pn = cols[4].trim();
+                    
                     const option = document.createElement('option');
-                    // Exibe: ITEM - MODELO (PN: PARTNUMBER) para facilitar busca
-                    option.value = `${cols[4].trim()} - ${cols.trim()} (PN: ${cols[5].trim()})`;
+                    // Sugestão no formato: ROLO FUSOR - M4070 (PN: JC6602846A)
+                    option.value = `${item} - ${model} (PN: ${pn})`;
                     list.appendChild(option);
                 }
             });
@@ -160,7 +173,7 @@
             statusEl.innerText = `✅ GitHub Conectado: ${rows.length} peças.`;
         } catch (e) {
             statusEl.className = 'status-err';
-            statusEl.innerText = "❌ ERRO: Acesse via GitHub Pages (HTTPS) para habilitar a busca.";
+            statusEl.innerText = "❌ ERRO: Verifique se o arquivo PARTNUMBER.csv está no GitHub.";
         }
     }
 
@@ -182,7 +195,7 @@
 
     function forceUppercase(e) {
         if (e.target.hasAttribute('contenteditable') || e.target.tagName === 'INPUT') {
-            e.target.style.textTransform = "uppercase";
+            e.target.style.textTransform = "uppercase"; [5]
         }
     }
 </script>
